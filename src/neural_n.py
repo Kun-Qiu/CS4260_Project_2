@@ -2,7 +2,7 @@ import numpy as np
 from scipy.special import expit
 
 class NeuralNetwork:
-    def __init__(self, input_size, hidden_layers, hidden_nodes, output_size, learning_rate=0.001):
+    def __init__(self, input_size, hidden_layers, hidden_nodes, output_size, learning_rate=0.01):
         self.learning_rate = learning_rate
         self.hidden_layers = hidden_layers
         
@@ -13,11 +13,12 @@ class NeuralNetwork:
         prev_size = input_size
         # Initialize hidden layers
         for _ in range(hidden_layers):
-            self.weights.append(np.random.randn(prev_size, hidden_nodes))  # He initialization
+            self.weights.append(np.random.randn(prev_size, hidden_nodes) * learning_rate)
             self.biases.append(np.zeros((1, hidden_nodes)))
             prev_size = hidden_nodes
+        
         # Output layer
-        self.weights.append(np.random.randn(prev_size, output_size))
+        self.weights.append(np.random.randn(prev_size, output_size) * learning_rate)
         self.biases.append(np.zeros((1, output_size)))
     
 
@@ -32,32 +33,32 @@ class NeuralNetwork:
     
 
     def __forward(self, X):
-        activations = [X]  # Store input and layer outputs
+        activations = [X]
+        # activations = []
+        cur = X
         for w, b in zip(self.weights, self.biases):
-            z = activations[-1] @ w + b
-            a = self.__sigmoid(z)
-            activations.append(a)
+            z = np.matmul(cur, w) + b
+            cur = self.__sigmoid(z)
+            activations.append(cur)
         return activations
     
 
     def __backward(self, activations, y):
-        output_error = (y - activations[-1])
+        output_error = (activations[-1] - y)
         delta = output_error * self.__sigmoid_derivative(activations[-1])
         deltas = [delta]
-        
+
         # Propagate error backwards
         for i in reversed(range(len(self.weights) - 1)):
-            delta = deltas[-1] @ self.weights[i+1].T
-            delta *= self.__sigmoid_derivative(activations[i+1])  # Current layer's activation
+            delta = np.matmul(deltas[-1], self.weights[i + 1].T) * self.__sigmoid_derivative(activations[i + 1])
             deltas.append(delta)
-        
         deltas.reverse()  # Order now: [input_layer_delta, hidden_deltas..., output_delta]
         
         grad_weights = []
         grad_biases = []
         # Calculate gradients for each layer
         for i in range(len(self.weights)):
-            grad_w = activations[i].T @ deltas[i]  # Input to layer i
+            grad_w = np.matmul(activations[i].T, deltas[i])
             grad_b = np.sum(deltas[i], axis=0, keepdims=True)
             grad_weights.append(grad_w)
             grad_biases.append(grad_b)
@@ -95,8 +96,8 @@ class NeuralNetwork:
                 # Update parameters with average gradients
                 batch_len = len(X_batch)
                 for layer in range(len(self.weights)):
-                    self.weights[layer] += self.learning_rate * (grad_weights_sum[layer] / batch_len)
-                    self.biases[layer] += self.learning_rate * (grad_biases_sum[layer] / batch_len)
+                    self.weights[layer] -= self.learning_rate * (grad_weights_sum[layer] / batch_len)
+                    self.biases[layer] -= self.learning_rate * (grad_biases_sum[layer] / batch_len)
             
             # Calculate loss
             if epoch % 2 == 0:

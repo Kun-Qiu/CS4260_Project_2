@@ -55,7 +55,7 @@ def cross_validate(data, labels, params, n_folds=5, algo = "tree", sklearn_check
                 clf = KNearestNeighbors(train_data, train_labels, params)
             if algo == "nn":
                 clf = NeuralNetwork(np.shape(train_data)[1], hidden_layers=params, hidden_nodes=5, output_size=1)
-                clf.train(train_data, train_labels, epochs=10, batch_size=1)
+                clf.train(train_data, train_labels, epochs=10, batch_size=128)
 
         # Compute accuracy
         correct = 0

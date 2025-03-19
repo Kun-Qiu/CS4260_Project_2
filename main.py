@@ -39,10 +39,10 @@ Decision Tree Parameters
 Neural Network Parameters
 =========================
 """
-hidden_layer = 0
+hidden_layer = 2
 mean_self, std_self, mean_sk, std_sk = 0, 0, 0, 0
-mean_self, std_self = cross_validate(data[0:100, :], label[0:100], params=hidden_layer, algo="nn", sklearn_check=False)
-# mean_sk, std_sk     = cross_validate(data, label, params=max_depth, algo="tree", sklearn_check=True)
+mean_self, std_self = cross_validate(data, label, params=hidden_layer, algo="nn", sklearn_check=False)
+# # mean_sk, std_sk     = cross_validate(data, label, params=max_depth, algo="tree", sklearn_check=True)
 print(f"Self DT-> mean:{mean_self}, std: {std_self}\nSKLearn DT-> mean:{mean_sk}, std: {std_sk}")
 
 """
