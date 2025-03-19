@@ -20,6 +20,7 @@ class KNearestNeighbors:
         self.k                  = int(k)
         self.distance_metric    = distance_metric.lower()
         
+        
     def _compute_distance(self, X):
         """
         Compute distance between two input samples
@@ -35,17 +36,25 @@ class KNearestNeighbors:
             raise ValueError(f"Unsupported distance metric: {self.distance_metric}")
         return distances
 
+
     def predict(self, X):
         """
         Predict labels for test samples
         
-        :params X : Input sample (shape: [n_features])
-        :returns  : Predicted labels (binary classification)
+        :params X  : Input sample (shape: [n_features])
+        :returns   : Predicted labels (binary classification)
         """
         X = np.array(X)
 
         distances   = self._compute_distance(X)
-        k_indices   = np.argsort(distances)[:self.k]
-        k_labels    = self.label[k_indices]
+        k_indices   = []
+        if self.k < 10:
+            for i in range(self.k):
+                min_idx     = np.argmin(distances)
+                distances   = np.delete(distances, min_idx)
+                k_indices.append(min_idx)
+        else:
+            k_indices = np.argsort(distances)[:self.k]
         
+        k_labels    = self.label[k_indices]
         return np.bincount(k_labels).argmax()
