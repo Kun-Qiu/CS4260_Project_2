@@ -1,10 +1,12 @@
 import numpy as np
 from scipy.special import expit
+from sklearn.preprocessing import StandardScaler
 
 class NeuralNetwork:
     def __init__(self, input_size, hidden_layers, hidden_nodes, output_size, learning_rate=0.01):
         self.learning_rate = learning_rate
         self.hidden_layers = hidden_layers
+        self.scaler        = StandardScaler()
         
         # Initialize weights and biases
         self.weights = []
@@ -13,60 +15,65 @@ class NeuralNetwork:
         prev_size = input_size
         # Initialize hidden layers
         for _ in range(hidden_layers):
-            self.weights.append(np.random.randn(prev_size, hidden_nodes) * learning_rate)
+            self.weights.append(np.random.randn(prev_size, hidden_nodes) * np.sqrt(1. / prev_size))
             self.biases.append(np.zeros((1, hidden_nodes)))
+            # self.weights.append(np.ones((prev_size, hidden_nodes)))
+            # self.biases.append(np.ones((1, hidden_nodes)))
             prev_size = hidden_nodes
         
         # Output layer
-        self.weights.append(np.random.randn(prev_size, output_size) * learning_rate)
+        self.weights.append(np.random.randn(prev_size, output_size) * np.sqrt(1. / prev_size))
         self.biases.append(np.zeros((1, output_size)))
+        # self.weights.append(np.ones((prev_size, output_size)))
+        # self.biases.append(np.ones((1, output_size)))
     
 
     @staticmethod
     def __sigmoid(x):
         return expit(x)
     
-
-    @staticmethod
-    def __sigmoid_derivative(sig):
-        return sig * (1 - sig)
+    def __sigmoid_derivative(self, z):
+        return self.__sigmoid(z) * (1 - self.__sigmoid(z))
     
 
     def __forward(self, X):
         activations = [X]
-        # activations = []
         cur = X
         for w, b in zip(self.weights, self.biases):
-            z = np.matmul(cur, w) + b
-            cur = self.__sigmoid(z)
+            mult = np.matmul(cur, w)
+            bias_term = mult + b
+            cur = self.__sigmoid(bias_term)
             activations.append(cur)
         return activations
     
 
     def __backward(self, activations, y):
         output_error = (activations[-1] - y)
-        delta = output_error * self.__sigmoid_derivative(activations[-1])
-        deltas = [delta]
+        delta_out = output_error * self.__sigmoid_derivative(activations[-1])
+        deltas = [delta_out]
 
         # Propagate error backwards
-        for i in reversed(range(len(self.weights) - 1)):
-            delta = np.matmul(deltas[-1], self.weights[i + 1].T) * self.__sigmoid_derivative(activations[i + 1])
+        for i in reversed(range(len(self.weights))):
+            delta = np.matmul(deltas[-1], self.weights[i].T) * self.__sigmoid_derivative(activations[i])
             deltas.append(delta)
-        deltas.reverse()  # Order now: [input_layer_delta, hidden_deltas..., output_delta]
+        deltas.reverse()
         
         grad_weights = []
         grad_biases = []
         # Calculate gradients for each layer
         for i in range(len(self.weights)):
-            grad_w = np.matmul(activations[i].T, deltas[i])
-            grad_b = np.sum(deltas[i], axis=0, keepdims=True)
+            a, b = np.shape(activations[i].T), np.shape(deltas[i+1])
+            grad_w = np.matmul(activations[i].T, deltas[i+1])
+            grad_b = np.sum(deltas[i+1], axis=0, keepdims=True)
             grad_weights.append(grad_w)
             grad_biases.append(grad_b)
+            # print("hi")
         
         return grad_weights, grad_biases
     
 
     def train(self, X, y, epochs=1, batch_size=32):
+        X = self.scaler.fit_transform(X)
         num_batches = max(len(X) // batch_size, 1)
         indices = np.arange(len(X))
         
@@ -74,6 +81,8 @@ class NeuralNetwork:
             np.random.shuffle(indices)
             X_shuffled = X[indices]
             y_shuffled = y[indices]
+            X_shuffled = X
+            y_shuffled = y
             
             X_batches = np.array_split(X_shuffled, num_batches)
             y_batches = np.array_split(y_shuffled, num_batches)
@@ -100,12 +109,13 @@ class NeuralNetwork:
                     self.biases[layer] -= self.learning_rate * (grad_biases_sum[layer] / batch_len)
             
             # Calculate loss
-            if epoch % 2 == 0:
+            if epoch % 10 == 0:
                 pred = self.__forward(X)[-1]
                 loss = np.mean((pred - y)**2)
                 print(f"Epoch {epoch} - Loss: {loss:.4f}")
     
 
     def predict(self, X):
-        X = X.reshape(1, -1) if X.ndim == 1 else X
+        X = self.scaler.transform(X.reshape(1, -1) if X.ndim == 1 else X)
+        # X = X.reshape(1, -1) if X.ndim == 1 else X
         return self.__forward(X)[-1] > 0.5

@@ -118,6 +118,8 @@ def cross_validate_neural_network(data, labels, hidden_layers, epochs, batch_siz
     folds_labels = np.array_split(labels, n_folds, axis=0)
     accuracies = []
 
+    # clf = NeuralNetwork(2, hidden_layers, hidden_nodes, output_size)
+    # clf.train(data, labels, epochs, batch_size)
     for fold in range(n_folds):
         test_data, test_labels = folds_data[fold], folds_labels[fold]
         train_data = np.concatenate([folds_data[i] for i in range(n_folds) if i != fold], axis=0)
@@ -133,6 +135,7 @@ def cross_validate_neural_network(data, labels, hidden_layers, epochs, batch_siz
                 correct += 1
         
         accuracy = correct / len(test_labels)
+        print(accuracy)
         accuracies.append(accuracy)
 
     return np.mean(accuracies), np.std(accuracies)

@@ -1,10 +1,4 @@
 import numpy as np
-from sklearn import tree
-from sklearn.neighbors import KNeighborsClassifier
-
-from src.decision_tree import DecisionTree
-from src.k_nn import KNearestNeighbors
-from src.neural_n import NeuralNetwork
 from data.csv_parser import CSVParser
 import src.validation as test
 
@@ -62,12 +56,17 @@ cleaned_data = np.array([csv_obj.get_column(criteria) for criteria in test_crite
 cleaned_labels = csv_obj.get_column("track_popularity")[indices]
 cleaned_labels = np.array([1 if val >= 50 else 0 for val in cleaned_labels])
 
-layer       = 2
+
+# cleaned_data = np.array([25, 20])
+# cleaned_data = cleaned_data[:, np.newaxis]
+# cleaned_labels = np.array([1])
+
+layer       = 1
 node        = 5
 epochs      = 10
 batch_size  = 128
 mean_self, std_self, mean_sk, std_sk = 0, 0, 0, 0
-mean_self, std_self = test.cross_validate_neural_network(cleaned_data, cleaned_labels, layer, 
+mean_self, std_self = test.cross_validate_neural_network(cleaned_data.T, cleaned_labels, layer, 
                                                          epochs, batch_size, hidden_nodes=node)
 # # mean_sk, std_sk     = cross_validate(data, label, params=max_depth, algo="tree", sklearn_check=True)
 print(f"Self DT-> mean:{mean_self}, std: {std_self}\nSKLearn DT-> mean:{mean_sk}, std: {std_sk}")
